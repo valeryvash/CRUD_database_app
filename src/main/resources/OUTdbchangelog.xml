@@ -1,0 +1,86 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext" xmlns:pro="http://www.liquibase.org/xml/ns/pro" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd http://www.liquibase.org/xml/ns/pro http://www.liquibase.org/xml/ns/pro/liquibase-pro-4.1.xsd http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.1.xsd">
+    <changeSet author="79227 (generated)" id="1641379184469-1">
+        <createTable tableName="post_tag_relation">
+            <column name="fk_post_id" type="INT">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="fk_tag_id" type="INT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="79227 (generated)" id="1641379184469-2">
+        <createTable tableName="post_writer_relation">
+            <column name="fk_post_id" type="INT">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="fk_writer_id" type="INT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="79227 (generated)" id="1641379184469-3">
+        <createTable tableName="posts">
+            <column autoIncrement="true" name="post_id" type="INT">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="post_content" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValue="ACTIVE" name="status" type="ENUM('DELETED', 'ACTIVE')">
+                <constraints nullable="false"/>
+            </column>
+            <column name="fk_writer_id" type="INT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="79227 (generated)" id="1641379184469-4">
+        <createTable tableName="tags">
+            <column autoIncrement="true" name="tag_id" type="INT">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="tag_name" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="79227 (generated)" id="1641379184469-5">
+        <createTable tableName="writers">
+            <column autoIncrement="true" name="writer_id" type="INT">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="writer_name" type="VARCHAR(45)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="79227 (generated)" id="1641379184469-6">
+        <createIndex indexName="fk_tag_id_idx" tableName="post_tag_relation">
+            <column name="fk_tag_id"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="79227 (generated)" id="1641379184469-7">
+        <createIndex indexName="fk_writer_id_idx" tableName="posts">
+            <column name="fk_writer_id"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="79227 (generated)" id="1641379184469-8">
+        <createIndex indexName="writer_id_idx" tableName="post_writer_relation">
+            <column name="fk_writer_id"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="79227 (generated)" id="1641379184469-9">
+        <addForeignKeyConstraint baseColumnNames="fk_post_id" baseTableName="post_tag_relation" constraintName="fk_post_id" deferrable="false" initiallyDeferred="false" onDelete="RESTRICT" onUpdate="RESTRICT" referencedColumnNames="post_id" referencedTableName="posts" validate="true"/>
+    </changeSet>
+    <changeSet author="79227 (generated)" id="1641379184469-10">
+        <addForeignKeyConstraint baseColumnNames="fk_tag_id" baseTableName="post_tag_relation" constraintName="fk_tag_id" deferrable="false" initiallyDeferred="false" onDelete="RESTRICT" onUpdate="RESTRICT" referencedColumnNames="tag_id" referencedTableName="tags" validate="true"/>
+    </changeSet>
+    <changeSet author="79227 (generated)" id="1641379184469-11">
+        <addForeignKeyConstraint baseColumnNames="fk_post_id" baseTableName="post_writer_relation" constraintName="post_id" deferrable="false" initiallyDeferred="false" onDelete="RESTRICT" onUpdate="RESTRICT" referencedColumnNames="post_id" referencedTableName="posts" validate="true"/>
+    </changeSet>
+    <changeSet author="79227 (generated)" id="1641379184469-12">
+        <addForeignKeyConstraint baseColumnNames="fk_writer_id" baseTableName="post_writer_relation" constraintName="writer_id" deferrable="false" initiallyDeferred="false" onDelete="RESTRICT" onUpdate="RESTRICT" referencedColumnNames="writer_id" referencedTableName="writers" validate="true"/>
+    </changeSet>
+</databaseChangeLog>
