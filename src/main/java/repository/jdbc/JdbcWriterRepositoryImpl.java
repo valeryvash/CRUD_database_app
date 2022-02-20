@@ -1,9 +1,9 @@
-package repository;
+package repository.jdbc;
 
 import model.Post;
-import model.PostStatus;
 import model.Tag;
 import model.Writer;
+import repository.WriterRepository;
 import util.PreparedStatementProvider;
 
 import java.sql.Connection;
@@ -19,19 +19,16 @@ public class JdbcWriterRepositoryImpl implements WriterRepository {
     JdbcPostRepositoryImpl jdbcPostRepository = new JdbcPostRepositoryImpl();
 
     @Override
-    public void add(Writer entity) {
-        if (entity.getId() != -1L) {
-            throw new IllegalArgumentException("Id value is " + entity.getId() + ", but shall be -1L");
-        }
+    public Writer add(Writer entity) {
 
         String writerTableQuery =
-                "INSERT INTO writers (writer_name) " +
+                "INSERT INTO writers (name) " +
                         "VALUE (?) ;";
         String postTableQuery =
-                "INSERT INTO posts (post_content,post_status,fk_writer_id) " +
+                "INSERT INTO posts (content,status,writer_id) " +
                         "VALUE (?,?,?) ;";
         String postTagRelationTableQuery =
-                "INSERT INTO post_tag_relation (fk_post_id, fk_tag_id) " +
+                "INSERT INTO post_tags (post_id, tag_id) " +
                         "VALUE (?,?) ;";
         List<Post> writerPosts = entity.getWriterPosts();
         boolean doesWriterHavePosts = !writerPosts.isEmpty();
@@ -53,19 +50,21 @@ public class JdbcWriterRepositoryImpl implements WriterRepository {
 
             appDatabaseConnection.commit();
 
+            ResultSet writerGeneratedKey = addWriterTableStatement.getGeneratedKeys();
+            long addedWriterId = -1L;
+            if (writerGeneratedKey.next()) {
+                addedWriterId = writerGeneratedKey.getLong("GENERATED_KEY");
+            }
+            Writer w = get(addedWriterId);
+
             if (doesWriterHavePosts) {
-                ResultSet writerGeneratedKey = addWriterTableStatement.getGeneratedKeys();
-                long addedWriterId = -1L;
-                if (writerGeneratedKey.next()) {
-                    addedWriterId = writerGeneratedKey.getLong("GENERATED_KEY");
-                }
 
                 for (Post writerPost : writerPosts) {
-                    writerPost.setFkWriterId(addedWriterId);
+                    writerPost.setWriter(w);
 
                     addWriterPostTableStatement.setString(1, writerPost.getPostContent());
                     addWriterPostTableStatement.setString(2, writerPost.getPostStatus().name());
-                    addWriterPostTableStatement.setLong(3, writerPost.getFkWriterId());
+                    addWriterPostTableStatement.setLong(3, addedWriterId);
                     addWriterPostTableStatement.executeUpdate();
 
                     appDatabaseConnection.commit();
@@ -100,23 +99,21 @@ public class JdbcWriterRepositoryImpl implements WriterRepository {
                 }
             }
             appDatabaseConnection.setAutoCommit(true);
+            return w;
         } catch (SQLException e) {
             e.printStackTrace();
         }
-
+        return new Writer();
     }
 
     @Override
     public Writer get(Long id) {
-        if (id < 1L) {
-            throw new IllegalArgumentException("Id shall have a positive value");
-        }
 
         Writer writerToBeReturned = new Writer();
         String getWriterQuery =
-                "SELECT writer_name " +
+                "SELECT name " +
                         "FROM writers " +
-                        "WHERE writer_id = ? ;";
+                        "WHERE id = ? ;";
         try (PreparedStatement getWriterStatement =
                      PreparedStatementProvider.prepareStatement(getWriterQuery)) {
             List<Post> allPosts = jdbcPostRepository.getAll();
@@ -134,7 +131,7 @@ public class JdbcWriterRepositoryImpl implements WriterRepository {
             if (dbHasPosts) {
                 List<Post> writerPosts = writerToBeReturned.getWriterPosts();
                 for (Post p : allPosts) {
-                    if (Objects.equals(p.getFkWriterId(), id)){
+                    if (Objects.equals(p.getWriter().getId(), id)){
                         writerPosts.add(p);
                     }
                 }
@@ -144,23 +141,19 @@ public class JdbcWriterRepositoryImpl implements WriterRepository {
             e.printStackTrace();
         }
 
-
         return writerToBeReturned;
     }
 
     @Override
-    public void update(Writer entity) {
-        if (entity.getId() < 1L) {
-            throw new IllegalArgumentException("Id shall be a positive value");
-        }
+    public Writer update(Writer entity) {
 
         String updateWriterNameQuery =
                 "UPDATE writers SET " +
-                        "writer_name = ? " +
-                        "WHERE writer_id = ? ;";
+                        "name = ? " +
+                        "WHERE id = ? ;";
         String deleteWriterPostsQuery =
                 "DELETE FROM posts " +
-                        "WHERE fk_writer_id = ? ;";
+                        "WHERE writer_id = ? ;";
         try (PreparedStatement updateWriterNameStatement =
                      PreparedStatementProvider.prepareStatement(updateWriterNameQuery);
              PreparedStatement deleteWriterPostsStatement =
@@ -183,17 +176,16 @@ public class JdbcWriterRepositoryImpl implements WriterRepository {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+
+        return get(entity.getId());
     }
 
     @Override
     public void remove(Long id) {
-        if (id < 1L) {
-            throw new IllegalArgumentException("Id shall have a positive value");
-        }
 
         String deleteWriterQuery =
                 "DELETE FROM writers " +
-                        "WHERE writer_id = ? ;";
+                        "WHERE id = ? ;";
         try (PreparedStatement deleteWriterStatement =
                      PreparedStatementProvider.prepareStatement(deleteWriterQuery)) {
             deleteWriterStatement.setLong(1, id);
@@ -210,7 +202,7 @@ public class JdbcWriterRepositoryImpl implements WriterRepository {
         List<Post> allPostList = jdbcPostRepository.getAll();
 
         String getAllWritersQuery =
-                "SELECT writer_id, writer_name " +
+                "SELECT id, name " +
                         "FROM writers;";
         try (PreparedStatement getAllWritersStatement =
                      PreparedStatementProvider.prepareStatement(getAllWritersQuery);
@@ -229,7 +221,7 @@ public class JdbcWriterRepositoryImpl implements WriterRepository {
                 if (dbHasPosts) {
                     List<Post> writerPosts = writerToBeAddedToList.getWriterPosts();
                     for (Post p : allPosts) {
-                        if (Objects.equals(p.getFkWriterId(), writerToBeAddedToList.getId())) {
+                        if (Objects.equals(p.getWriter().getId(), writerToBeAddedToList.getId())) {
                             writerPosts.add(p);
                         }
                     }
@@ -240,5 +232,50 @@ public class JdbcWriterRepositoryImpl implements WriterRepository {
         }
 
         return listToBeReturned;
+    }
+
+    @Override
+    public boolean nameContains(String name) {
+        return false;
+    }
+
+    @Override
+    public boolean containsId(Long id) {
+        boolean isIdContains = false;
+        String containsIdQuery =
+                "SELECT id FROM writers WHERE id = ? ;";
+        try (PreparedStatement preparedStatement =
+                     PreparedStatementProvider.prepareStatement(containsIdQuery)) {
+            preparedStatement.setLong(1, id);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            if (resultSet.next()) {
+                isIdContains = true;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return isIdContains;
+    }
+
+    @Override
+    public Writer getByName(String name) {
+        long writerId = -1L;
+
+        String getIdByNameQuery =
+                "SELECT id " +
+                        "FROM writers " +
+                        "WHERE name = ? ;";
+        try (PreparedStatement preparedStatement =
+                     PreparedStatementProvider.prepareStatement(getIdByNameQuery)
+        ) {
+            preparedStatement.setString(1, name);
+            ResultSet getByNameResultSet = preparedStatement.executeQuery();
+            if (getByNameResultSet.next()) {
+                writerId = getByNameResultSet.getLong("id");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return get(writerId);
     }
 }

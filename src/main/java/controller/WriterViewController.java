@@ -2,15 +2,12 @@ package controller;
 
 import model.Post;
 import model.Writer;
-import repository.JdbcPostRepositoryImpl;
-import repository.JdbcWriterRepositoryImpl;
-import service.PostService;
+import repository.jdbc.JdbcWriterRepositoryImpl;
 import service.WriterService;
 import util.EntitiesPrinter;
 
 import java.util.List;
 import java.util.Scanner;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class WriterViewController {

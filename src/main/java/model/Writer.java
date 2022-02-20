@@ -10,9 +10,6 @@ public class Writer implements Entity<Long>{
     private List<Post> writerPosts;
 
     public Writer() {
-        this.id = -1L;
-        this.writerName = "";
-        this.writerPosts = new ArrayList<>();
     }
 
     @Override

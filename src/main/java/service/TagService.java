@@ -6,6 +6,8 @@ import repository.TagRepository;
 import java.util.List;
 import java.util.Optional;
 
+import static util.EntitiesIdCheck.*;
+
 public class TagService {
     private TagRepository tagRepository;
 
@@ -16,19 +18,23 @@ public class TagService {
         this.tagRepository = tagRepository;
     }
 
-    public void add(Tag entity) {
-        tagRepository.add(entity);
+    public Tag add(Tag entity) {
+        throwIfIdIsPositive(entity);
+        return tagRepository.add(entity);
     }
 
     public Tag getById(Long aLong) {
+        throwIfIdIsSmallerThanOne(aLong);
         return tagRepository.get(aLong);
     }
 
-    public void update(Tag entity) {
-        tagRepository.update(entity);
+    public Tag update(Tag entity) {
+        throwIfIdIsSmallerThanOne(entity);
+        return tagRepository.update(entity);
     }
 
     public void remove(Long aLong) {
+        throwIfIdIsSmallerThanOne(aLong);
         tagRepository.remove(aLong);
     }
 
@@ -37,27 +43,22 @@ public class TagService {
     }
 
     public boolean tagNameContains(String s) {
-        return tagRepository
-                .getAll()
-                .stream()
-                .anyMatch(tag -> tag.getTagName().equals(s));
+        throwIfObjectIsNull(s);
+        return tagRepository.nameContains(s);
     }
 
     public boolean containsId(Long id) {
-        return tagRepository
-                .getAll()
-                .stream()
-                .anyMatch(tag -> tag.getId().equals(id));
+        throwIfIdIsSmallerThanOne(id);
+        return tagRepository.containsId(id);
     }
 
     public Tag getByName(String s) {
-        Tag toBeReturned = new Tag();
-        Optional<Tag> optionalTag = getAll().stream().filter(tag -> tag.getTagName().equals(s)).findAny();
-
-        return optionalTag.orElseThrow();
+        throwIfObjectIsNull(s);
+        return tagRepository.getByName(s);
     }
 
     public void delete(Tag t) {
+        throwIfIdIsSmallerThanOne(t);
         remove(t.getId());
     }
 }

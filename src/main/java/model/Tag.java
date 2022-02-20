@@ -6,8 +6,6 @@ public class Tag implements Entity<Long>{
     private String tagName;
 
     public Tag() {
-        this.id = -1L;
-        this.tagName = "";
     }
 
     @Override

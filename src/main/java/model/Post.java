@@ -9,14 +9,9 @@ public class Post implements Entity<Long>{
     private String postContent;
     private PostStatus postStatus;
     private List<Tag> postTags;
-    private Long fkWriterId;
+    private Writer writer;
 
     public Post() {
-        this.id = -1L;
-        this.postContent = "";
-        this.postStatus = PostStatus.ACTIVE;
-        this.postTags = new ArrayList<>();
-        this.fkWriterId = -1L;
     }
 
     @Override
@@ -52,11 +47,11 @@ public class Post implements Entity<Long>{
         this.postStatus = postStatus;
     }
 
-    public Long getFkWriterId() {
-        return fkWriterId;
+    public Writer getWriter() {
+        return writer;
     }
 
-    public void setFkWriterId(Long fkWriterId) {
-        this.fkWriterId = fkWriterId;
+    public void setWriter(Writer writer) {
+        this.writer = writer;
     }
 }

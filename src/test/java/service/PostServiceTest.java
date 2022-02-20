@@ -49,6 +49,8 @@ class PostServiceTest {
 
         when(pr.getAll()).thenReturn(postsList);
         when(pr.get(2L)).thenReturn(updPost);
+
+        when(pr.containsId(2L)).thenReturn(true);
     }
 
 
@@ -59,6 +61,9 @@ class PostServiceTest {
 
         assertFalse(falseResult);
         assertTrue(trueResult);
+
+        assertThrows(IllegalArgumentException.class,
+                () -> postService.containsId(null));
     }
 
     @Test
@@ -73,12 +78,17 @@ class PostServiceTest {
         postService.delete(updPost);
 
         verify(pr).remove(updPost.getId());
+
+        assertThrows(IllegalArgumentException.class,
+                () -> postService.delete(new Post()));
     }
 
     @Test
     void deleteByStatus() {
         postService.deleteByStatus(PostStatus.DELETED);
+        verify(pr).deleteByStatus(PostStatus.DELETED);
 
-        verify(pr).getAll();
+        postService.deleteByStatus(PostStatus.ACTIVE);
+        verify(pr).deleteByStatus(PostStatus.ACTIVE);
     }
 }

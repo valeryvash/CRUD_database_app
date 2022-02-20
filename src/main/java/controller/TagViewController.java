@@ -1,7 +1,7 @@
 package controller;
 
 import model.Tag;
-import repository.JdbcTagRepositoryImpl;
+import repository.jdbc.JdbcTagRepositoryImpl;
 import service.TagService;
 import util.EntitiesPrinter;
 

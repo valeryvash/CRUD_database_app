@@ -1,8 +1,10 @@
-package repository;
+package repository.jdbc;
 
 import model.Post;
 import model.PostStatus;
 import model.Tag;
+import model.Writer;
+import repository.PostRepository;
 import util.PreparedStatementProvider;
 
 import java.sql.Connection;
@@ -17,16 +19,13 @@ import java.util.Map;
 public class JdbcPostRepositoryImpl implements PostRepository {
 
     @Override
-    public void add(Post entity) {
-        if (entity.getId() != -1L) {
-            throw new IllegalArgumentException("Id value is " + entity.getId() + ", but shall be -1L");
-        }
+    public Post add(Post entity) {
 
         String postTableQuery =
-                "INSERT INTO posts (post_content,post_status,fk_writer_id) " +
+                "INSERT INTO posts (content,status,writer_id) " +
                         "VALUE (?,?,?) ;";
         String postTagRelationTableQuery =
-                "INSERT INTO post_tag_relation (fk_post_id, fk_tag_id) " +
+                "INSERT INTO post_tags (post_id, tag_id) " +
                         "VALUE (?,?) ;";
 
         try (
@@ -43,7 +42,7 @@ public class JdbcPostRepositoryImpl implements PostRepository {
 
             addPostStatement.setString(1, entity.getPostContent());
             addPostStatement.setString(2, entity.getPostStatus().name());
-            addPostStatement.setLong(3, entity.getFkWriterId());
+            addPostStatement.setLong(3, entity.getWriter().getId());
             addPostStatement.executeUpdate();
 
             appDatabaseConnection.commit();
@@ -79,22 +78,19 @@ public class JdbcPostRepositoryImpl implements PostRepository {
         } catch (SQLException e) {
             e.printStackTrace();
         }
-
+        return null;
     }
 
     @Override
     public Post get(Long id) {
-        if (id < 1L) {
-            throw new IllegalArgumentException("Id shall be a positive value");
-        }
 
         Post postToBeReturned = new Post();
         List<Tag> postTags = postToBeReturned.getPostTags();
         String getPostQuery =
-                "SELECT post_id,post_content,post_status,fk_writer_id,tag_id,tag_name " +
+                "SELECT p.id as post_id,content as post_content,status as post_status,writer_id as fk_writer_id,t.id as tag_id,t.name as tag_name " +
                         "FROM posts p " +
-                        "LEFT JOIN post_tag_relation ptr on p.post_id = ptr.fk_post_id " +
-                        "LEFT JOIN tags t on ptr.fk_tag_id = t.tag_id " +
+                        "LEFT JOIN post_tags ptr on p.id = ptr.post_id " +
+                        "LEFT JOIN tags t on ptr.tag_id = t.id " +
                         "WHERE post_id = ? ;";
         try (PreparedStatement getPostStatement =
                      PreparedStatementProvider.prepareStatement(getPostQuery)) {
@@ -106,7 +102,9 @@ public class JdbcPostRepositoryImpl implements PostRepository {
                 postToBeReturned.setId(getPostResultSet.getLong("post_id"));
                 postToBeReturned.setPostContent(getPostResultSet.getString("post_content"));
                 postToBeReturned.setPostStatus(PostStatus.valueOf(getPostResultSet.getString("post_status")));
-                postToBeReturned.setFkWriterId(getPostResultSet.getLong("fk_writer_id"));
+                Writer w = new Writer();
+                w.setId(getPostResultSet.getLong("fk_writer_id"));
+                postToBeReturned.setWriter(w);
 
                 do {
                     long tagId = getPostResultSet.getLong("tag_id");
@@ -128,25 +126,21 @@ public class JdbcPostRepositoryImpl implements PostRepository {
     }
 
     @Override
-    public void update(Post entity) {
-        if (entity.getId() < 1L) {
-            throw new IllegalArgumentException("Id shall be a positive value");
-        }
-
+    public Post update(Post entity) {
         List<Tag> postTags = entity.getPostTags();
         boolean isTagListNotEmpty = !postTags.isEmpty();
 
         String updatePostQuery =
                 "UPDATE posts SET " +
-                        "post_content = ? ," +
-                        "post_status = ? ," +
-                        "fk_writer_id = ? " +
-                        "WHERE post_id = ? ;";
+                        "content = ? ," +
+                        "status = ? ," +
+                        "writer_id = ? " +
+                        "WHERE id = ? ;";
         String deletePostTagRelationQuery =
-                "DELETE FROM post_tag_relation " +
-                        "WHERE fk_post_id = ? ;";
+                "DELETE FROM post_tags " +
+                        "WHERE post_id = ? ;";
         String insertPostTagRelationQuery =
-                "INSERT INTO post_tag_relation (fk_post_id, fk_tag_id) " +
+                "INSERT INTO post_tags (post_id, tag_id) " +
                         "VALUE (?,?);";
         try (PreparedStatement updatePostStatement =
                      PreparedStatementProvider.prepareStatement(updatePostQuery);
@@ -160,7 +154,7 @@ public class JdbcPostRepositoryImpl implements PostRepository {
 
             updatePostStatement.setString(1, entity.getPostContent());
             updatePostStatement.setString(2, entity.getPostStatus().name());
-            updatePostStatement.setLong(3, entity.getFkWriterId());
+            updatePostStatement.setLong(3, entity.getWriter().getId());
             updatePostStatement.setLong(4, entity.getId());
             updatePostStatement.executeUpdate();
 
@@ -191,17 +185,15 @@ public class JdbcPostRepositoryImpl implements PostRepository {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+        return null;
     }
 
     @Override
     public void remove(Long id) {
-        if (id < 1L) {
-            throw new IllegalArgumentException("Id shall be a positive value");
-        }
 
         String deletePostQuery =
                 "DELETE FROM posts " +
-                        "WHERE post_id = ? ;";
+                        "WHERE id = ? ;";
         try (PreparedStatement deletePostStatement =
                      PreparedStatementProvider.prepareStatement(deletePostQuery)) {
             deletePostStatement.setLong(1, id);
@@ -216,10 +208,10 @@ public class JdbcPostRepositoryImpl implements PostRepository {
         List<Post> listToBeReturned = new ArrayList<>();
 
         String getAllPostsQuery =
-                "SELECT post_id,post_content,post_status,fk_writer_id,tag_id,tag_name " +
+                "SELECT id as post_id, content as post_content, status as post_status, writer_id as fk_writer_id,t.id as tag_id,t.name as tag_name " +
                         "FROM posts p " +
-                        "LEFT JOIN post_tag_relation ptr on p.post_id = ptr.fk_post_id " +
-                        "LEFT JOIN tags t on ptr.fk_tag_id = t.tag_id " +
+                        "LEFT JOIN post_tags ptr on p.id = ptr.post_id " +
+                        "LEFT JOIN tags t on ptr.tag_id = t.id " +
                         "ORDER BY post_id ;";
         try (PreparedStatement getAllPostStatement =
                      PreparedStatementProvider.prepareStatement(getAllPostsQuery);
@@ -238,7 +230,9 @@ public class JdbcPostRepositoryImpl implements PostRepository {
                     currentPost.setId(currentLinePostId);
                     currentPost.setPostContent(answerFromDatabase.getString("post_content"));
                     currentPost.setPostStatus(PostStatus.valueOf(answerFromDatabase.getString("post_status")));
-                    currentPost.setFkWriterId(answerFromDatabase.getLong("fk_writer_id"));
+                    Writer w = new Writer();
+                    w.setId(answerFromDatabase.getLong("fk_writer_id"));
+                    currentPost.setWriter(w);
                 }
 
                 long tagId = answerFromDatabase.getLong("tag_id");
@@ -259,5 +253,38 @@ public class JdbcPostRepositoryImpl implements PostRepository {
             e.printStackTrace();
         }
         return listToBeReturned;
+    }
+
+    @Override
+    public boolean containsId(Long id) {
+        boolean isIdPresented = false;
+        String containsIdQuery =
+                "SELECT id FROM posts WHERE id = ? ;";
+        try (PreparedStatement containsIdStatement =
+                     PreparedStatementProvider.prepareStatement(containsIdQuery)) {
+            containsIdStatement.setLong(1, id);
+            ResultSet containsIdSet = containsIdStatement.executeQuery();
+            if (containsIdSet.next()) {
+                isIdPresented = true;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return isIdPresented;
+    }
+
+    @Override
+    public void deleteByStatus(PostStatus postStatus) {
+        String statusString = postStatus.name();
+        String deletePostByStatusQuery =
+                "DELETE FROM posts " +
+                        "WHERE status = ? ;";
+        try (PreparedStatement deletePostByStatusStatement =
+                     PreparedStatementProvider.prepareStatement(deletePostByStatusQuery)) {
+            deletePostByStatusStatement.setString(1, statusString);
+            deletePostByStatusStatement.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 }

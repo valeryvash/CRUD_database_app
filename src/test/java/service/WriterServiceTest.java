@@ -29,11 +29,12 @@ class WriterServiceTest {
         updateWriter.setWriterName("Britney");
         updateWriter.setId(1L);
 
-        List<Writer> writerList = new ArrayList<>();
-        writerList.add(updateWriter);
-
-        when(wr.getAll()).thenReturn(writerList);
         when(wr.get(1L)).thenReturn(updateWriter);
+
+        when(wr.nameContains("Britney")).thenReturn(true);
+        when(wr.containsId(1L)).thenReturn(true);
+
+        when(wr.getByName("Britney")).thenReturn(updateWriter);
     }
 
 
@@ -44,6 +45,9 @@ class WriterServiceTest {
 
         assertFalse(falseCall);
         assertTrue(trueCall);
+
+        assertThrows(IllegalArgumentException.class,
+                () -> writerService.writerNameContains(null));
     }
 
     @Test
@@ -53,6 +57,9 @@ class WriterServiceTest {
 
         assertFalse(falseResult);
         assertTrue(trueResult);
+
+        assertThrows(IllegalArgumentException.class,
+                () -> writerService.writerNameContains(null));
     }
 
     @Test
@@ -60,6 +67,9 @@ class WriterServiceTest {
         Writer result = writerService.get(1L);
 
         assertEquals(updateWriter, result);
+
+        assertThrows(IllegalArgumentException.class, () -> writerService.get(-1L));
+        assertThrows(IllegalArgumentException.class, () -> writerService.get(0L));
     }
 
     @Test
@@ -67,6 +77,9 @@ class WriterServiceTest {
         Writer result = writerService.getByName("Britney");
 
         assertEquals(updateWriter, result);
+
+        assertThrows(IllegalArgumentException.class,
+                () -> writerService.writerNameContains(null));
     }
 
     @Test

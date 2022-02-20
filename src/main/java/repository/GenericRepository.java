@@ -4,14 +4,14 @@ import java.util.List;
 
 public interface GenericRepository<ID,T> {
 
-    public void add(T entity);
+    T add(T entity);
 
-    public T get(ID id);
+    T get(ID id);
 
-    public void update(T entity);
+    T update(T entity);
 
-    public void remove(ID id);
+    void remove(ID id);
 
-    public List<T> getAll();
+     List<T> getAll();
 
 }

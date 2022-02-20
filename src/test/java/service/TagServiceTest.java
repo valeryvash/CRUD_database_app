@@ -36,12 +36,13 @@ class TagServiceTest {
         updateTag.setId(1L);
         updateTag.setTagName(updatedTagName);
 
-        List<Tag> tagList = new ArrayList<>();
-        tagList.add(updateTag);
-
-        when(tr.getAll()).thenReturn(tagList);
         when(tr.get(1L)).thenReturn(updateTag);
+        when(tr.nameContains(updatedTagName)).thenReturn(true);
 
+        when(tr.containsId(5L)).thenReturn(false);
+        when(tr.containsId(1L)).thenReturn(true);
+
+        when(tr.getByName(updatedTagName)).thenReturn(updateTag);
     }
 
     @Test
@@ -51,6 +52,8 @@ class TagServiceTest {
 
         assertFalse(falseResult);
         assertTrue(trueResult);
+
+        assertThrows(IllegalArgumentException.class, () -> tagService.tagNameContains(null));
     }
 
     @Test
@@ -60,13 +63,24 @@ class TagServiceTest {
 
         assertFalse(falseResult);
         assertTrue(trueResult);
+
+        assertThrows(IllegalArgumentException.class,
+                () -> tagService.containsId(null));
+        assertThrows((IllegalArgumentException.class),
+                () -> tagService.containsId(-1L));
+        assertThrows(IllegalArgumentException.class,
+                () -> tagService.containsId(0L));
+        assertDoesNotThrow(() -> tagService.containsId(1L));
     }
 
     @Test
     void getByName() {
         Tag result = tagService.getByName(updatedTagName);
 
-        assertEquals(result,updateTag);
+        assertEquals(result, updateTag);
+
+        assertThrows(IllegalArgumentException.class,
+                () -> tagService.getByName(null));
     }
 
     @Test
@@ -74,5 +88,8 @@ class TagServiceTest {
         tagService.delete(updateTag);
 
         verify(tr).remove(updateTag.getId());
+
+        assertThrows(IllegalArgumentException.class,
+                () -> tagService.delete(null));
     }
 }

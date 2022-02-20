@@ -5,6 +5,8 @@ import repository.WriterRepository;
 
 import java.util.List;
 
+import static util.EntitiesIdCheck.*;
+
 public class WriterService {
     private WriterRepository writerRepository;
 
@@ -15,19 +17,23 @@ public class WriterService {
         this.writerRepository = writerRepository;
     }
 
-    public void add(Writer entity) {
-        writerRepository.add(entity);
+    public Writer add(Writer entity) {
+        throwIfIdIsPositive(entity);
+        return writerRepository.add(entity);
     }
 
     public Writer get(Long id) {
+        throwIfIdIsSmallerThanOne(id);
         return writerRepository.get(id);
     }
 
-    public void update(Writer entity) {
-        writerRepository.update(entity);
+    public Writer update(Writer entity) {
+        throwIfIdIsSmallerThanOne(entity);
+        return writerRepository.update(entity);
     }
 
     public void remove(Long id) {
+        throwIfIdIsSmallerThanOne(id);
         writerRepository.remove(id);
     }
 
@@ -36,27 +42,23 @@ public class WriterService {
     }
 
     public boolean writerNameContains(String s) {
-        return getAll()
-                .stream()
-                .anyMatch(writer -> writer.getWriterName().equals(s));
+        throwIfObjectIsNull(s);
+        return writerRepository.nameContains(s);
     }
 
     public boolean containsId(Long id) {
-        return getAll()
-                .stream()
-                .anyMatch(writer -> writer.getId().equals(id));
+        throwIfIdIsSmallerThanOne(id);
+        return writerRepository.containsId(id);
     }
 
     public Writer getById(Long id) {
-        return get(id);
+        throwIfObjectIsNull(id);
+        return this.get(id);
     }
 
     public Writer getByName(String s) {
-        return getAll()
-                .stream()
-                .filter(writer -> writer.getWriterName().equals(s))
-                .findAny()
-                .orElseThrow();
+        throwIfObjectIsNull(s);
+        return writerRepository.getByName(s);
     }
 
     public void delete(Writer w) {
