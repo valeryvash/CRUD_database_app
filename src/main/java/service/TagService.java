@@ -4,7 +4,6 @@ import model.Tag;
 import repository.TagRepository;
 
 import java.util.List;
-import java.util.Optional;
 
 import static util.EntitiesIdCheck.*;
 

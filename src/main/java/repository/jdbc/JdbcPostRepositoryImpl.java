@@ -20,7 +20,7 @@ public class JdbcPostRepositoryImpl implements PostRepository {
 
     @Override
     public Post add(Post entity) {
-
+        long addedPostId = -1L;
         String postTableQuery =
                 "INSERT INTO posts (content,status,writer_id) " +
                         "VALUE (?,?,?) ;";
@@ -48,7 +48,6 @@ public class JdbcPostRepositoryImpl implements PostRepository {
             appDatabaseConnection.commit();
 
             ResultSet postGeneratedKey = addPostStatement.getGeneratedKeys();
-            long addedPostId = -1L;
             if (postGeneratedKey.next()) {
                 addedPostId = postGeneratedKey.getLong("GENERATED_KEY");
             }
@@ -78,14 +77,15 @@ public class JdbcPostRepositoryImpl implements PostRepository {
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        return null;
+        return this.get(addedPostId);
     }
 
     @Override
     public Post get(Long id) {
-
         Post postToBeReturned = new Post();
-        List<Tag> postTags = postToBeReturned.getPostTags();
+        List<Tag> postTags = new ArrayList<>();
+        postToBeReturned.setPostTags(postTags);
+
         String getPostQuery =
                 "SELECT p.id as post_id,content as post_content,status as post_status,writer_id as fk_writer_id,t.id as tag_id,t.name as tag_name " +
                         "FROM posts p " +
@@ -102,8 +102,10 @@ public class JdbcPostRepositoryImpl implements PostRepository {
                 postToBeReturned.setId(getPostResultSet.getLong("post_id"));
                 postToBeReturned.setPostContent(getPostResultSet.getString("post_content"));
                 postToBeReturned.setPostStatus(PostStatus.valueOf(getPostResultSet.getString("post_status")));
+
                 Writer w = new Writer();
                 w.setId(getPostResultSet.getLong("fk_writer_id"));
+
                 postToBeReturned.setWriter(w);
 
                 do {
@@ -121,7 +123,6 @@ public class JdbcPostRepositoryImpl implements PostRepository {
         } catch (SQLException e) {
             e.printStackTrace();
         }
-
         return postToBeReturned;
     }
 
@@ -162,7 +163,7 @@ public class JdbcPostRepositoryImpl implements PostRepository {
             deletePostTagRelationStatement.executeUpdate();
 
             if (isTagListNotEmpty) {
-                final boolean isBatchUpdatesSupport = appToDatabaseConnection.getMetaData().supportsBatchUpdates();
+                boolean isBatchUpdatesSupport = appToDatabaseConnection.getMetaData().supportsBatchUpdates();
 
                 long postId = entity.getId();
                 for (Tag t : postTags) {
@@ -185,7 +186,7 @@ public class JdbcPostRepositoryImpl implements PostRepository {
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        return null;
+        return this.get(entity.getId());
     }
 
     @Override
@@ -257,7 +258,6 @@ public class JdbcPostRepositoryImpl implements PostRepository {
 
     @Override
     public boolean containsId(Long id) {
-        boolean isIdPresented = false;
         String containsIdQuery =
                 "SELECT id FROM posts WHERE id = ? ;";
         try (PreparedStatement containsIdStatement =
@@ -265,12 +265,12 @@ public class JdbcPostRepositoryImpl implements PostRepository {
             containsIdStatement.setLong(1, id);
             ResultSet containsIdSet = containsIdStatement.executeQuery();
             if (containsIdSet.next()) {
-                isIdPresented = true;
+                return true;
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        return isIdPresented;
+        return false;
     }
 
     @Override
@@ -286,5 +286,73 @@ public class JdbcPostRepositoryImpl implements PostRepository {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+    }
+
+    @Override
+    public List<Post> getPostsForWriter(Long id) {
+        List<Post> postsToBeReturned = new ArrayList<>();
+
+        String getWriterPostsQuery =
+                "SELECT id as post_id, content as post_content, status as post_status, writer_id as fk_writer_id,t.id as tag_id,t.name as tag_name " +
+                        "FROM posts p " +
+                        "LEFT JOIN post_tags ptr on p.id = ptr.post_id " +
+                        "LEFT JOIN tags t on ptr.tag_id = t.id " +
+                        "WHERE writer_id = ? " +
+                        "ORDER BY post_id ;";
+        try (PreparedStatement getWriterPostsStatement =
+                     PreparedStatementProvider.prepareStatement(getWriterPostsQuery)
+        ) {
+            getWriterPostsStatement.setLong(1, id);
+            ResultSet answerFromDatabase = getWriterPostsStatement.executeQuery();
+
+            Map<Long, Post> postMap = new HashMap<>();
+            Writer writer = new Writer();
+            writer.setId(id);
+
+            while (answerFromDatabase.next()) {
+                long postId = answerFromDatabase.getLong("post_id");
+                if (!postMap.containsKey(postId)) {
+                    Post currentLinePost = new Post();
+                    currentLinePost.setId(postId);
+                    currentLinePost.setPostContent(answerFromDatabase.getString("post_content"));
+                    currentLinePost.setPostStatus(PostStatus.valueOf(answerFromDatabase.getString("post_status")));
+                    currentLinePost.setWriter(writer);
+                    currentLinePost.setPostTags(new ArrayList<>());
+                    postMap.put(postId, currentLinePost);
+                }
+
+                long tagId = answerFromDatabase.getLong("tag_id");
+                String tagName = answerFromDatabase.getString("tag_name");
+                if (tagId != 0L & tagName != null) {
+                    Tag t = new Tag();
+                    t.setId(tagId);
+                    t.setTagName(tagName);
+                    postMap.get(postId).getPostTags().add(t);
+                }
+            }
+            postsToBeReturned = new ArrayList<>(postMap.values());
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return postsToBeReturned;
+    }
+
+    @Override
+    public Long getWriterId(Long postId) {
+        long writerId = 0L;
+        String getWriterIdQuery =
+                "SELECT DISTINCT writer_id FROM posts p WHERE p.id = ? ;";
+        try (PreparedStatement getWriterIdStatement =
+                     PreparedStatementProvider.prepareStatement(getWriterIdQuery)
+        ){
+            getWriterIdStatement.setLong(1, postId);
+            ResultSet rs = getWriterIdStatement.executeQuery();
+            if (rs.next()) {
+                writerId = rs.getLong("writer_id");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return writerId;
     }
 }

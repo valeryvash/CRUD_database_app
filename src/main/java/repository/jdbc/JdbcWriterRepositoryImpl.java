@@ -30,8 +30,10 @@ public class JdbcWriterRepositoryImpl implements WriterRepository {
         String postTagRelationTableQuery =
                 "INSERT INTO post_tags (post_id, tag_id) " +
                         "VALUE (?,?) ;";
+
         List<Post> writerPosts = entity.getWriterPosts();
         boolean doesWriterHavePosts = !writerPosts.isEmpty();
+
         try (PreparedStatement addWriterTableStatement =
                      PreparedStatementProvider.prepareStatement(writerTableQuery,
                              PreparedStatement.RETURN_GENERATED_KEYS);

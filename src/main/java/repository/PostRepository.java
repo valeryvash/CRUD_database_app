@@ -25,4 +25,8 @@ public interface PostRepository extends GenericRepository<Long, Post> {
     boolean containsId(Long id);
 
     void deleteByStatus(PostStatus postStatus);
+
+    List<Post> getPostsForWriter(Long id);
+
+    Long getWriterId(Long postId);
 }

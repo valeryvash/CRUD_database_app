@@ -7,6 +7,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import repository.PostRepository;
+import repository.TagRepository;
+import repository.WriterRepository;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,6 +19,8 @@ import static org.mockito.Mockito.*;
 class PostServiceTest {
 
     static PostRepository pr;
+    static TagRepository tr;
+    static WriterRepository wr;
     static PostService postService;
     static Post newPost;
     static Post updPost;
@@ -26,7 +30,9 @@ class PostServiceTest {
     @BeforeAll
     static void setUp() {
         pr = mock(PostRepository.class);
-        postService = new PostService(pr);
+        tr = mock(TagRepository.class);
+        wr = mock(WriterRepository.class);
+        postService = new PostService(pr,wr,tr);
 
         newPost = new Post();
         newPost.setPostContent("NewPostContent");

@@ -3,6 +3,8 @@ package service;
 import model.Writer;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import repository.PostRepository;
+import repository.TagRepository;
 import repository.WriterRepository;
 
 import java.util.ArrayList;
@@ -14,6 +16,8 @@ import static org.mockito.Mockito.*;
 class WriterServiceTest {
 
     static WriterRepository wr;
+    static PostRepository pr;
+    static TagRepository tr;
     static WriterService writerService;
     static Writer newWriter ;
     static Writer updateWriter;
@@ -21,7 +25,9 @@ class WriterServiceTest {
     @BeforeAll
     static void setUp() {
         wr = mock(WriterRepository.class);
-        writerService = new WriterService(wr);
+        pr = mock(PostRepository.class);
+        tr = mock(TagRepository.class);
+        writerService = new WriterService(wr,pr,tr);
         newWriter = new Writer();
         newWriter.setWriterName("Ashley");
 
