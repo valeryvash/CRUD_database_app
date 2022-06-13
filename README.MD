@@ -1,6 +1,6 @@
 ### Task description
 I need to realize console CRUD app.
-It needs to  interact with database and allow to perform all CRUD operations with the next entities:
+It needs to interact with database and allow to perform some CRUD operations with the next entities:
 
 ```
 Writer(id,name,List<Post> posts)
